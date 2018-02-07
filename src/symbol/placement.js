@@ -204,13 +204,12 @@ class Placement {
         bucket.justReloaded = false;
     }
 
-    commit(prevPlacement: ?Placement, now: number) {
-        this.commitTime = now;
-
+    commit(prevPlacement: ?Placement, now: number): void {
         let placementChanged = false;
 
+        assert(!prevPlacement || typeof prevPlacement.commitTime === 'number');
         const increment = (prevPlacement && this.fadeDuration !== 0) ?
-            (this.commitTime - prevPlacement.commitTime) / this.fadeDuration :
+            (now - prevPlacement.commitTime) / this.fadeDuration :
             1;
 
         const prevOpacities = prevPlacement ? prevPlacement.opacities : {};
@@ -242,7 +241,13 @@ class Placement {
             }
         }
 
-        return placementChanged;
+        // if placement was changed, then update our commit time to 'now'.
+        // otherwise, inherit the commit time from the previous placement
+        if (placementChanged) {
+            this.commitTime = now;
+        } else if (typeof this.commitTime !== 'number') {
+            this.commitTime = prevPlacement ? prevPlacement.commitTime : now;
+        }
     }
 
     updateLayerOpacities(styleLayer: StyleLayer, tiles: Array<Tile>) {
